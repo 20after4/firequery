@@ -138,10 +138,10 @@ FBL.ns(function() {
         ";
 
         if (Firebug.TraceModule) {
-            Firebug.TraceModule.DBG_FIREQUERY = false;
+            Firebug.TraceModule.DBG_FIREQUERY = true;
             var type = firequeryPrefs.getPrefType('extensions.firebug.DBG_FIREQUERY');
             if (type != nsIPrefBranch.PREF_BOOL) try {
-                firequeryPrefs.setBoolPref('extensions.firebug.DBG_FIREQUERY', false);
+                firequeryPrefs.setBoolPref('extensions.firebug.DBG_FIREQUERY', true);
             } catch(e) {}
         }
     
@@ -323,6 +323,64 @@ FBL.ns(function() {
             }
         }
         
+        function getCommandLine()
+        {
+            return Firebug.largeCommandLine
+                ? Firebug.chrome.$("fbLargeCommandLine")
+                : Firebug.chrome.$("fbCommandLine");
+        }
+        
+        function loadSnippet(snipname) {
+            var dirService = Components.classes["@mozilla.org/file/directory_service;1"].
+                              getService(Components.interfaces.nsIProperties); 
+            var homeDirFile = dirService.get("Home", Components.interfaces.nsIFile); // returns an nsIFile object
+            homeDirFile.append('snips');
+            homeDirFile.append(snipname);
+            
+            var data = "";
+            var fstream = Components.classes["@mozilla.org/network/file-input-stream;1"].
+                                    createInstance(Components.interfaces.nsIFileInputStream);
+            var cstream = Components.classes["@mozilla.org/intl/converter-input-stream;1"].
+                                    createInstance(Components.interfaces.nsIConverterInputStream);
+            fstream.init(homeDirFile, -1, 0, 0);
+            cstream.init(fstream, "UTF-8", 0, 0); // you can use another encoding here if you wish
+
+            let (str = {}) {
+              cstream.readString(-1, str); // read the whole file and put it in str.value
+              data = str.value;
+            }
+            cstream.close(); // this closes fstream
+
+            
+            var cmdline = getCommandLine();
+            cmdline.value = data;
+        }
+        
+        function initSnips() {
+            var dirService = Components.classes["@mozilla.org/file/directory_service;1"].
+                              getService(Components.interfaces.nsIProperties); 
+            var homeDirFile = dirService.get("Home", Components.interfaces.nsIFile); // returns an nsIFile object
+            homeDirFile.append('snips');
+            
+            // file is the given directory (nsIFile)
+            var entries = homeDirFile.directoryEntries;
+            var array = [];
+            while(entries.hasMoreElements())
+            {
+              var entry = entries.getNext();
+              entry.QueryInterface(Components.interfaces.nsIFile);
+              var path = entry.path.split('/');
+              var name = path.pop();
+              var mnu = Firebug.chrome.$("fbFireQuerySnips");
+              var item = mnu.ownerDocument.createElement('menuitem');
+              item.setAttribute('label',name);
+              item.setAttribute('oncommand','Firebug.FireQuery.loadSnip(this.label)');
+              mnu.appendChild(item);
+            }
+            
+            
+
+        }
         ////////////////////////////////////////////////////////////////////////
         // Firebug.FireQuery
         //
@@ -353,6 +411,8 @@ FBL.ns(function() {
             initializeUI: function() {
                 dbg(">>>FireQuery.initializeUI");
                 Firebug.Module.initializeUI.apply(this, arguments);
+                initSnips();
+
             },
             /////////////////////////////////////////////////////////////////////////////////////////
             onSuspendFirebug: function(context) {
@@ -386,6 +446,17 @@ FBL.ns(function() {
                 } catch (ex) {
                     dbg("   ! "+ex, context);
                 }
+            },
+            /////////////////////////////////////////////////////////////////////////////////////////
+            loadSnip: function(name) {
+
+                dbg(">>>FireQuery.loadSnip ", context);
+                loadSnippet(name);
+            //    try {
+                    
+            //    } catch (ex) {
+            //        dbg("   ! "+ex, context);
+            //    }
             },
             /////////////////////////////////////////////////////////////////////////////////////////
             getPref: function(name) {

@@ -7,6 +7,7 @@
     <script type="application/x-javascript" src="chrome://firequery/content/firequery.js"/>
     <commandset id="mainCommandSet">
         <command id="cmd_JQuerify" oncommand="Firebug.FireQuery.buttonJQuerify(FirebugContext)"/>
+        <command id="cmd_firequery_snip" oncommand="Firebug.FireQuery.loadSnip(this.label)"/>
     </commandset>
     <toolbox id="fbToolbox">
         <toolbar id="fbToolbar" align="center" role="toolbar">
@@ -18,4 +19,14 @@
             </hbox>
         </toolbar>
     </toolbox>
+
+    <hbox id="fbCommandToolbar">
+        <toolbarbutton label="snips" type="menu" class="toolbar-text-button">
+            <menupopup id="fbFireQuerySnips">
+
+
+            </menupopup>
+        </toolbarbutton>
+    </hbox>
+
 </overlay>
